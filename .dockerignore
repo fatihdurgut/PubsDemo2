@@ -1,0 +1,87 @@
+# Build outputs
+**/bin/
+**/obj/
+**/out/
+
+# NuGet packages
+*.nupkg
+*.snupkg
+.nuget/
+
+# Visual Studio / VS Code
+.vs/
+.vscode/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# ReSharper
+_ReSharper*/
+*.[Rr]e[Ss]harper
+
+# Test results
+**/TestResults/
+*.trx
+*.coverage
+*.coveragexml
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Documentation and markdown
+*.md
+!README.md
+docs/
+
+# CI/CD
+.github/
+.azure/
+*.yml
+*.yaml
+!docker-compose.yml
+
+# IDE specific
+.idea/
+*.swp
+*.swo
+*~
+
+# OS specific
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+
+# Docker
+Dockerfile*
+.dockerignore
+docker-compose*.yml
+
+# Environment files
+.env
+.env.*
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+
+# Package manager files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Build artifacts
+*.dll
+*.exe
+*.pdb
+*.cache
+
+# Plan and documentation
+plan/
+*.instructions.md

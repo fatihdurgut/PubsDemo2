@@ -1,0 +1,165 @@
+@page "/authors/{id}"
+@inject AuthorService AuthorService
+@inject NavigationManager Navigation
+
+<PageTitle>Author Details</PageTitle>
+
+<div class="container-fluid">
+    <div class="row mb-3">
+        <div class="col-12">
+            <h1>Author Details</h1>
+        </div>
+    </div>
+
+    <LoadingSpinner IsLoading="@isLoading" />
+
+    <ErrorAlert Message="@errorMessage" OnClose="@(() => errorMessage = null)" />
+
+    @if (!isLoading && author != null)
+    {
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Personal Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <dl class="row">
+                            <dt class="col-sm-4">Author ID:</dt>
+                            <dd class="col-sm-8">@author.AuthorId</dd>
+
+                            <dt class="col-sm-4">Name:</dt>
+                            <dd class="col-sm-8">@author.FullName</dd>
+
+                            <dt class="col-sm-4">Phone:</dt>
+                            <dd class="col-sm-8">@author.Phone</dd>
+
+                            <dt class="col-sm-4">Address:</dt>
+                            <dd class="col-sm-8">@(author.Address ?? "N/A")</dd>
+
+                            <dt class="col-sm-4">City:</dt>
+                            <dd class="col-sm-8">@(author.City ?? "N/A")</dd>
+
+                            <dt class="col-sm-4">State:</dt>
+                            <dd class="col-sm-8">@(author.State ?? "N/A")</dd>
+
+                            <dt class="col-sm-4">ZIP:</dt>
+                            <dd class="col-sm-8">@(author.Zip ?? "N/A")</dd>
+
+                            <dt class="col-sm-4">Contract:</dt>
+                            <dd class="col-sm-8">
+                                @if (author.Contract)
+                                {
+                                    <span class="badge bg-success">Yes</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">No</span>
+                                }
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Titles (@author.Titles.Count)</h5>
+                    </div>
+                    <div class="card-body">
+                        @if (author.Titles.Any())
+                        {
+                            <div class="list-group">
+                                @foreach (var title in author.Titles)
+                                {
+                                    <a href="/titles/@title.TitleId" class="list-group-item list-group-item-action">
+                                        <div class="d-flex w-100 justify-content-between">
+                                            <h6 class="mb-1">@title.TitleName</h6>
+                                        </div>
+                                    </a>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <p class="text-muted">No titles found for this author.</p>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-3">
+            <div class="col-12">
+                <button class="btn btn-primary" @onclick="@(() => Navigation.NavigateTo($"/authors/edit/{Id}"))">
+                    <span class="bi bi-pencil"></span> Edit
+                </button>
+                <button class="btn btn-danger" @onclick="DeleteAuthor">
+                    <span class="bi bi-trash"></span> Delete
+                </button>
+                <button class="btn btn-secondary" @onclick="@(() => Navigation.NavigateTo("/authors"))">
+                    <span class="bi bi-arrow-left"></span> Back to List
+                </button>
+            </div>
+        </div>
+    }
+    else if (!isLoading)
+    {
+        <div class="alert alert-warning">
+            <span class="bi bi-exclamation-triangle"></span> Author not found.
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public string Id { get; set; } = string.Empty;
+
+    private AuthorDto? author;
+    private bool isLoading = true;
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAuthor();
+    }
+
+    private async Task LoadAuthor()
+    {
+        isLoading = true;
+        errorMessage = null;
+
+        try
+        {
+            author = await AuthorService.GetByIdAsync(Id);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error loading author: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task DeleteAuthor()
+    {
+        if (author == null) return;
+
+        var confirmed = true; // In a real app, you'd use a confirmation dialog
+        if (confirmed)
+        {
+            try
+            {
+                await AuthorService.DeleteAsync(Id);
+                Navigation.NavigateTo("/authors");
+            }
+            catch (Exception ex)
+            {
+                errorMessage = $"Error deleting author: {ex.Message}";
+            }
+        }
+    }
+}

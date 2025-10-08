@@ -1,0 +1,32 @@
+# Stage 1: Build the Blazor WebAssembly app
+FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+WORKDIR /src
+
+# Copy project files
+COPY ["src/PubsApp.Web/PubsApp.Web.csproj", "PubsApp.Web/"]
+COPY ["src/PubsApp.Application/PubsApp.Application.csproj", "PubsApp.Application/"]
+COPY ["src/PubsApp.Core/PubsApp.Core.csproj", "PubsApp.Core/"]
+
+# Restore dependencies
+RUN dotnet restore "PubsApp.Web/PubsApp.Web.csproj"
+
+# Copy all source files
+COPY src/PubsApp.Web/ PubsApp.Web/
+COPY src/PubsApp.Application/ PubsApp.Application/
+COPY src/PubsApp.Core/ PubsApp.Core/
+
+# Build and publish the app
+WORKDIR /src/PubsApp.Web
+RUN dotnet publish "PubsApp.Web.csproj" -c Release -o /app/publish
+
+# Stage 2: Serve with nginx
+FROM nginx:alpine
+WORKDIR /usr/share/nginx/html
+
+# Copy published Blazor WebAssembly files
+COPY --from=build /app/publish/wwwroot .
+
+# Copy nginx configuration for SPA routing
+COPY src/PubsApp.Web/nginx.conf /etc/nginx/nginx.conf
+
+EXPOSE 80

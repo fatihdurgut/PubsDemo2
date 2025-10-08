@@ -1,0 +1,184 @@
+@page "/titles/{id}"
+@inject TitleService TitleService
+@inject NavigationManager Navigation
+
+<PageTitle>Title Details</PageTitle>
+
+<div class="container-fluid">
+    <div class="row mb-3">
+        <div class="col-12">
+            <h1>Title Details</h1>
+        </div>
+    </div>
+
+    <LoadingSpinner IsLoading="@isLoading" />
+
+    <ErrorAlert Message="@errorMessage" OnClose="@(() => errorMessage = null)" />
+
+    @if (!isLoading && title != null)
+    {
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Title Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <dl class="row">
+                            <dt class="col-sm-4">Title ID:</dt>
+                            <dd class="col-sm-8">@title.TitleId</dd>
+
+                            <dt class="col-sm-4">Title:</dt>
+                            <dd class="col-sm-8">@title.TitleName</dd>
+
+                            <dt class="col-sm-4">Type:</dt>
+                            <dd class="col-sm-8"><span class="badge bg-secondary">@title.Type</span></dd>
+
+                            <dt class="col-sm-4">Price:</dt>
+                            <dd class="col-sm-8">@(title.Price?.ToString("C") ?? "N/A")</dd>
+
+                            <dt class="col-sm-4">Advance:</dt>
+                            <dd class="col-sm-8">@(title.Advance?.ToString("C") ?? "N/A")</dd>
+
+                            <dt class="col-sm-4">Royalty:</dt>
+                            <dd class="col-sm-8">@(title.Royalty?.ToString() ?? "N/A")%</dd>
+
+                            <dt class="col-sm-4">YTD Sales:</dt>
+                            <dd class="col-sm-8">@(title.YtdSales?.ToString("N0") ?? "N/A")</dd>
+
+                            <dt class="col-sm-4">Published Date:</dt>
+                            <dd class="col-sm-8">@title.PublishedDate.ToString("MMMM dd, yyyy")</dd>
+
+                            <dt class="col-sm-4">Notes:</dt>
+                            <dd class="col-sm-8">@(title.Notes ?? "N/A")</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h5 class="mb-0">Publisher</h5>
+                    </div>
+                    <div class="card-body">
+                        @if (title.Publisher != null)
+                        {
+                            <dl class="row mb-0">
+                                <dt class="col-sm-4">Name:</dt>
+                                <dd class="col-sm-8">@title.Publisher.PublisherName</dd>
+
+                                <dt class="col-sm-4">Location:</dt>
+                                <dd class="col-sm-8">@(title.Publisher.Location ?? "N/A")</dd>
+                            </dl>
+                            <a href="/publishers/@title.PublisherId" class="btn btn-sm btn-outline-primary mt-2">
+                                View Publisher Details
+                            </a>
+                        }
+                        else
+                        {
+                            <p class="text-muted mb-0">No publisher information available.</p>
+                        }
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Authors (@title.Authors.Count)</h5>
+                    </div>
+                    <div class="card-body">
+                        @if (title.Authors.Any())
+                        {
+                            <div class="list-group">
+                                @foreach (var author in title.Authors)
+                                {
+                                    <a href="/authors/@author.AuthorId" class="list-group-item list-group-item-action">
+                                        <div class="d-flex w-100 justify-content-between">
+                                            <h6 class="mb-1">@author.FullName</h6>
+                                        </div>
+                                    </a>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <p class="text-muted">No authors found for this title.</p>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-3">
+            <div class="col-12">
+                <button class="btn btn-primary" @onclick="@(() => Navigation.NavigateTo($"/titles/edit/{Id}"))">
+                    <span class="bi bi-pencil"></span> Edit
+                </button>
+                <button class="btn btn-danger" @onclick="DeleteTitle">
+                    <span class="bi bi-trash"></span> Delete
+                </button>
+                <button class="btn btn-secondary" @onclick="@(() => Navigation.NavigateTo("/titles"))">
+                    <span class="bi bi-arrow-left"></span> Back to List
+                </button>
+            </div>
+        </div>
+    }
+    else if (!isLoading)
+    {
+        <div class="alert alert-warning">
+            <span class="bi bi-exclamation-triangle"></span> Title not found.
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public string Id { get; set; } = string.Empty;
+
+    private TitleDto? title;
+    private bool isLoading = true;
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadTitle();
+    }
+
+    private async Task LoadTitle()
+    {
+        isLoading = true;
+        errorMessage = null;
+
+        try
+        {
+            title = await TitleService.GetByIdAsync(Id);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error loading title: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task DeleteTitle()
+    {
+        if (title == null) return;
+
+        var confirmed = true; // In a real app, you'd use a confirmation dialog
+        if (confirmed)
+        {
+            try
+            {
+                await TitleService.DeleteAsync(Id);
+                Navigation.NavigateTo("/titles");
+            }
+            catch (Exception ex)
+            {
+                errorMessage = $"Error deleting title: {ex.Message}";
+            }
+        }
+    }
+}

@@ -1,0 +1,199 @@
+@page "/titles"
+@inject TitleService TitleService
+@inject NavigationManager Navigation
+
+<PageTitle>Titles</PageTitle>
+
+<div class="container-fluid">
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h1>Titles</h1>
+                <button class="btn btn-primary" @onclick="CreateNew">
+                    <span class="bi bi-plus-circle"></span> New Title
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <ErrorAlert Message="@errorMessage" OnClose="@(() => errorMessage = null)" />
+
+    <div class="row mb-3">
+        <div class="col-12">
+            <SearchBox Placeholder="Search titles..." OnSearch="HandleSearch" />
+        </div>
+    </div>
+
+    <LoadingSpinner IsLoading="@isLoading" Message="Loading titles..." />
+
+    @if (!isLoading)
+    {
+        <div class="row">
+            <div class="col-12">
+                @if (titles.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Title ID</th>
+                                    <th>Title</th>
+                                    <th>Type</th>
+                                    <th>Publisher</th>
+                                    <th>Price</th>
+                                    <th>Published Date</th>
+                                    <th style="width: 150px;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var title in titles)
+                                {
+                                    <tr>
+                                        <td>@title.TitleId</td>
+                                        <td>@title.TitleName</td>
+                                        <td>@title.Type</td>
+                                        <td>@(title.Publisher?.PublisherName ?? "N/A")</td>
+                                        <td>@(title.Price?.ToString("C") ?? "N/A")</td>
+                                        <td>@title.PublishedDate.ToString("MM/dd/yyyy")</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-info me-1" @onclick="@(() => ViewDetails(title.TitleId))" title="View Details">
+                                                <span class="bi bi-eye"></span>
+                                            </button>
+                                            <button class="btn btn-sm btn-warning me-1" @onclick="@(() => Edit(title.TitleId))" title="Edit">
+                                                <span class="bi bi-pencil"></span>
+                                            </button>
+                                            <button class="btn btn-sm btn-danger" @onclick="@(() => Delete(title.TitleId))" title="Delete">
+                                                <span class="bi bi-trash"></span>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <Pagination CurrentPage="@currentPage" 
+                               TotalPages="@totalPages" 
+                               TotalItems="@totalItems" 
+                               PageChanged="HandlePageChanged" />
+                }
+                else if (isSearching)
+                {
+                    <div class="alert alert-info">
+                        <span class="bi bi-info-circle"></span> No titles found matching your search.
+                    </div>
+                }
+                else
+                {
+                    <div class="alert alert-warning">
+                        <span class="bi bi-exclamation-triangle"></span> No titles found. Click "New Title" to create one.
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private List<TitleDto> titles = new();
+    private bool isLoading = true;
+    private bool isSearching = false;
+    private string? errorMessage;
+    private int currentPage = 1;
+    private int totalPages = 1;
+    private int totalItems = 0;
+    private const int pageSize = 10;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadTitles();
+    }
+
+    private async Task LoadTitles()
+    {
+        isLoading = true;
+        isSearching = false;
+        errorMessage = null;
+
+        try
+        {
+            var result = await TitleService.GetAllAsync(currentPage, pageSize);
+            titles = result?.Items?.ToList() ?? new List<TitleDto>();
+            currentPage = result?.PageNumber ?? 1;
+            totalPages = result?.TotalPages ?? 1;
+            totalItems = result?.TotalCount ?? 0;
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error loading titles: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task HandleSearch(string searchTerm)
+    {
+        if (string.IsNullOrWhiteSpace(searchTerm))
+        {
+            await LoadTitles();
+            return;
+        }
+
+        isLoading = true;
+        isSearching = true;
+        errorMessage = null;
+
+        try
+        {
+            var result = await TitleService.SearchAsync(searchTerm);
+            titles = result ?? new List<TitleDto>();
+            totalItems = titles.Count;
+            totalPages = 1;
+            currentPage = 1;
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error searching titles: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task HandlePageChanged(int newPage)
+    {
+        currentPage = newPage;
+        await LoadTitles();
+    }
+
+    private void CreateNew()
+    {
+        Navigation.NavigateTo("/titles/create");
+    }
+
+    private void ViewDetails(string titleId)
+    {
+        Navigation.NavigateTo($"/titles/{titleId}");
+    }
+
+    private void Edit(string titleId)
+    {
+        Navigation.NavigateTo($"/titles/edit/{titleId}");
+    }
+
+    private async Task Delete(string titleId)
+    {
+        try
+        {
+            await TitleService.DeleteAsync(titleId);
+            await LoadTitles();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to delete title: {ex.Message}";
+        }
+    }
+}

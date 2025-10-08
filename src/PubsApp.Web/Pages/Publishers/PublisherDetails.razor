@@ -1,0 +1,148 @@
+@page "/publishers/{id}"
+@inject PublisherService PublisherService
+@inject NavigationManager Navigation
+
+<PageTitle>Publisher Details</PageTitle>
+
+<div class="container-fluid">
+    <div class="row mb-3">
+        <div class="col-12">
+            <h1>Publisher Details</h1>
+        </div>
+    </div>
+
+    <LoadingSpinner IsLoading="@isLoading" />
+
+    <ErrorAlert Message="@errorMessage" OnClose="@(() => errorMessage = null)" />
+
+    @if (!isLoading && publisher != null)
+    {
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Publisher Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <dl class="row">
+                            <dt class="col-sm-4">Publisher ID:</dt>
+                            <dd class="col-sm-8">@publisher.PublisherId</dd>
+
+                            <dt class="col-sm-4">Name:</dt>
+                            <dd class="col-sm-8">@publisher.PublisherName</dd>
+
+                            <dt class="col-sm-4">City:</dt>
+                            <dd class="col-sm-8">@(publisher.City ?? "N/A")</dd>
+
+                            <dt class="col-sm-4">State:</dt>
+                            <dd class="col-sm-8">@(publisher.State ?? "N/A")</dd>
+
+                            <dt class="col-sm-4">Country:</dt>
+                            <dd class="col-sm-8">@(publisher.Country ?? "N/A")</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Published Titles (@publisher.Titles.Count)</h5>
+                    </div>
+                    <div class="card-body">
+                        @if (publisher.Titles.Any())
+                        {
+                            <div class="list-group">
+                                @foreach (var title in publisher.Titles)
+                                {
+                                    <a href="/titles/@title.TitleId" class="list-group-item list-group-item-action">
+                                        <div class="d-flex w-100 justify-content-between">
+                                            <h6 class="mb-1">@title.TitleName</h6>
+                                            <small class="text-muted">@title.Type</small>
+                                        </div>
+                                    </a>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <p class="text-muted">No titles found for this publisher.</p>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-3">
+            <div class="col-12">
+                <button class="btn btn-primary" @onclick="@(() => Navigation.NavigateTo($"/publishers/edit/{Id}"))">
+                    <span class="bi bi-pencil"></span> Edit
+                </button>
+                <button class="btn btn-danger" @onclick="DeletePublisher">
+                    <span class="bi bi-trash"></span> Delete
+                </button>
+                <button class="btn btn-secondary" @onclick="@(() => Navigation.NavigateTo("/publishers"))">
+                    <span class="bi bi-arrow-left"></span> Back to List
+                </button>
+            </div>
+        </div>
+    }
+    else if (!isLoading)
+    {
+        <div class="alert alert-warning">
+            <span class="bi bi-exclamation-triangle"></span> Publisher not found.
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public string Id { get; set; } = string.Empty;
+
+    private PublisherDto? publisher;
+    private bool isLoading = true;
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadPublisher();
+    }
+
+    private async Task LoadPublisher()
+    {
+        isLoading = true;
+        errorMessage = null;
+
+        try
+        {
+            publisher = await PublisherService.GetByIdAsync(Id);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error loading publisher: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task DeletePublisher()
+    {
+        if (publisher == null) return;
+
+        var confirmed = true; // In a real app, you'd use a confirmation dialog
+        if (confirmed)
+        {
+            try
+            {
+                await PublisherService.DeleteAsync(Id);
+                Navigation.NavigateTo("/publishers");
+            }
+            catch (Exception ex)
+            {
+                errorMessage = $"Error deleting publisher: {ex.Message}";
+            }
+        }
+    }
+}

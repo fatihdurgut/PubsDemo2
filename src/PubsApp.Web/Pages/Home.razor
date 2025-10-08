@@ -1,0 +1,129 @@
+﻿@page "/"
+@inject AuthorService AuthorService
+@inject TitleService TitleService
+@inject PublisherService PublisherService
+
+<PageTitle>Home - Pubs Application</PageTitle>
+
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="display-4">Welcome to Pubs Application</h1>
+            <p class="lead">Manage your publishing business with authors, titles, and publishers</p>
+        </div>
+    </div>
+
+    <LoadingSpinner IsLoading="@isLoading" Message="Loading statistics..." />
+
+    <ErrorAlert Message="@errorMessage" OnClose="@(() => errorMessage = null)" />
+
+    @if (!isLoading)
+    {
+        <div class="row mb-4">
+            <div class="col-md-4 mb-3">
+                <div class="card text-white bg-primary">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h5 class="card-title">Authors</h5>
+                                <p class="card-text display-6">@authorCount</p>
+                            </div>
+                            <span class="bi bi-people-fill" style="font-size: 3rem; opacity: 0.5;"></span>
+                        </div>
+                        <a href="/authors" class="btn btn-light mt-2">Manage Authors</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4 mb-3">
+                <div class="card text-white bg-success">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h5 class="card-title">Titles</h5>
+                                <p class="card-text display-6">@titleCount</p>
+                            </div>
+                            <span class="bi bi-book-fill" style="font-size: 3rem; opacity: 0.5;"></span>
+                        </div>
+                        <a href="/titles" class="btn btn-light mt-2">Manage Titles</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4 mb-3">
+                <div class="card text-white bg-info">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h5 class="card-title">Publishers</h5>
+                                <p class="card-text display-6">@publisherCount</p>
+                            </div>
+                            <span class="bi bi-building" style="font-size: 3rem; opacity: 0.5;"></span>
+                        </div>
+                        <a href="/publishers" class="btn btn-light mt-2">Manage Publishers</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Quick Actions</h5>
+                        <div class="list-group list-group-flush">
+                            <a href="/authors/create" class="list-group-item list-group-item-action">
+                                <span class="bi bi-plus-circle"></span> Add New Author
+                            </a>
+                            <a href="/titles/create" class="list-group-item list-group-item-action">
+                                <span class="bi bi-plus-circle"></span> Add New Title
+                            </a>
+                            <a href="/publishers/create" class="list-group-item list-group-item-action">
+                                <span class="bi bi-plus-circle"></span> Add New Publisher
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private bool isLoading = true;
+    private string? errorMessage;
+    private int authorCount;
+    private int titleCount;
+    private int publisherCount;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadStatistics();
+    }
+
+    private async Task LoadStatistics()
+    {
+        isLoading = true;
+        errorMessage = null;
+
+        try
+        {
+            // Get the first page to extract total counts
+            var authorsResult = await AuthorService.GetAllAsync(1, 1);
+            var titlesResult = await TitleService.GetAllAsync(1, 1);
+            var publishersResult = await PublisherService.GetAllAsync(1, 1);
+
+            authorCount = authorsResult?.TotalCount ?? 0;
+            titleCount = titlesResult?.TotalCount ?? 0;
+            publisherCount = publishersResult?.TotalCount ?? 0;
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error loading statistics: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+}

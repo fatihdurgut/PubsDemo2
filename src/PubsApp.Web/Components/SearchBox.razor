@@ -1,0 +1,48 @@
+<div class="search-box mb-3">
+    <div class="input-group">
+        <input type="text" 
+               class="form-control" 
+               placeholder="@Placeholder" 
+               @bind="searchTerm" 
+               @bind:event="oninput"
+               @onkeyup="HandleKeyUp" />
+        <button class="btn btn-outline-secondary" type="button" @onclick="Search">
+            <i class="bi bi-search"></i> Search
+        </button>
+        @if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            <button class="btn btn-outline-secondary" type="button" @onclick="Clear">
+                <i class="bi bi-x"></i> Clear
+            </button>
+        }
+    </div>
+</div>
+
+@code {
+    private string searchTerm = string.Empty;
+
+    [Parameter]
+    public string Placeholder { get; set; } = "Search...";
+
+    [Parameter]
+    public EventCallback<string> OnSearch { get; set; }
+
+    private async Task Search()
+    {
+        await OnSearch.InvokeAsync(searchTerm);
+    }
+
+    private async Task Clear()
+    {
+        searchTerm = string.Empty;
+        await OnSearch.InvokeAsync(string.Empty);
+    }
+
+    private async Task HandleKeyUp(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await Search();
+        }
+    }
+}

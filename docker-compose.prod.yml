@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  # Pubs API Application (Production)
+  pubs-api:
+    image: ${DOCKER_REGISTRY}/pubs-api:${IMAGE_TAG:-latest}
+    container_name: pubs-api-prod
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__DefaultConnection=${CONNECTION_STRING}
+      - ASPNETCORE_FORWARDEDHEADERS_ENABLED=true
+    ports:
+      - "80:8080"
+    networks:
+      - pubs-network
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  pubs-network:
+    driver: bridge
+    name: pubs_network_prod

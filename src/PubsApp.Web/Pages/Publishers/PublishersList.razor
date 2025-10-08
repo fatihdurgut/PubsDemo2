@@ -1,0 +1,197 @@
+@page "/publishers"
+@inject PublisherService PublisherService
+@inject NavigationManager Navigation
+
+<PageTitle>Publishers</PageTitle>
+
+<div class="container-fluid">
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h1>Publishers</h1>
+                <button class="btn btn-primary" @onclick="CreateNew">
+                    <span class="bi bi-plus-circle"></span> New Publisher
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <ErrorAlert Message="@errorMessage" OnClose="@(() => errorMessage = null)" />
+
+    <div class="row mb-3">
+        <div class="col-12">
+            <SearchBox Placeholder="Search publishers..." OnSearch="HandleSearch" />
+        </div>
+    </div>
+
+    <LoadingSpinner IsLoading="@isLoading" Message="Loading publishers..." />
+
+    @if (!isLoading)
+    {
+        <div class="row">
+            <div class="col-12">
+                @if (publishers.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Publisher ID</th>
+                                    <th>Name</th>
+                                    <th>City</th>
+                                    <th>State</th>
+                                    <th>Country</th>
+                                    <th style="width: 150px;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var publisher in publishers)
+                                {
+                                    <tr>
+                                        <td>@publisher.PublisherId</td>
+                                        <td>@publisher.PublisherName</td>
+                                        <td>@(publisher.City ?? "N/A")</td>
+                                        <td>@(publisher.State ?? "N/A")</td>
+                                        <td>@(publisher.Country ?? "N/A")</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-info me-1" @onclick="@(() => ViewDetails(publisher.PublisherId))" title="View Details">
+                                                <span class="bi bi-eye"></span>
+                                            </button>
+                                            <button class="btn btn-sm btn-warning me-1" @onclick="@(() => Edit(publisher.PublisherId))" title="Edit">
+                                                <span class="bi bi-pencil"></span>
+                                            </button>
+                                            <button class="btn btn-sm btn-danger" @onclick="@(() => Delete(publisher.PublisherId))" title="Delete">
+                                                <span class="bi bi-trash"></span>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <Pagination CurrentPage="@currentPage" 
+                               TotalPages="@totalPages" 
+                               TotalItems="@totalItems" 
+                               PageChanged="HandlePageChanged" />
+                }
+                else if (isSearching)
+                {
+                    <div class="alert alert-info">
+                        <span class="bi bi-info-circle"></span> No publishers found matching your search.
+                    </div>
+                }
+                else
+                {
+                    <div class="alert alert-warning">
+                        <span class="bi bi-exclamation-triangle"></span> No publishers found. Click "New Publisher" to create one.
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private List<PublisherDto> publishers = new();
+    private bool isLoading = true;
+    private bool isSearching = false;
+    private string? errorMessage;
+    private int currentPage = 1;
+    private int totalPages = 1;
+    private int totalItems = 0;
+    private const int pageSize = 10;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadPublishers();
+    }
+
+    private async Task LoadPublishers()
+    {
+        isLoading = true;
+        isSearching = false;
+        errorMessage = null;
+
+        try
+        {
+            var result = await PublisherService.GetAllAsync(currentPage, pageSize);
+            publishers = result?.Items?.ToList() ?? new List<PublisherDto>();
+            currentPage = result?.PageNumber ?? 1;
+            totalPages = result?.TotalPages ?? 1;
+            totalItems = result?.TotalCount ?? 0;
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error loading publishers: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task HandleSearch(string searchTerm)
+    {
+        if (string.IsNullOrWhiteSpace(searchTerm))
+        {
+            await LoadPublishers();
+            return;
+        }
+
+        isLoading = true;
+        isSearching = true;
+        errorMessage = null;
+
+        try
+        {
+            var result = await PublisherService.SearchAsync(searchTerm);
+            publishers = result ?? new List<PublisherDto>();
+            totalItems = publishers.Count;
+            totalPages = 1;
+            currentPage = 1;
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error searching publishers: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task HandlePageChanged(int newPage)
+    {
+        currentPage = newPage;
+        await LoadPublishers();
+    }
+
+    private void CreateNew()
+    {
+        Navigation.NavigateTo("/publishers/create");
+    }
+
+    private void ViewDetails(string publisherId)
+    {
+        Navigation.NavigateTo($"/publishers/{publisherId}");
+    }
+
+    private void Edit(string publisherId)
+    {
+        Navigation.NavigateTo($"/publishers/edit/{publisherId}");
+    }
+
+    private async Task Delete(string publisherId)
+    {
+        try
+        {
+            await PublisherService.DeleteAsync(publisherId);
+            await LoadPublishers();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to delete publisher: {ex.Message}";
+        }
+    }
+}

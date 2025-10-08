@@ -1,0 +1,182 @@
+@page "/authors"
+@using PubsApp.Application.DTOs
+@using PubsApp.Web.Services
+@using PubsApp.Web.Components
+@inject AuthorService AuthorService
+@inject NavigationManager Navigation
+
+<PageTitle>Authors - Pubs Application</PageTitle>
+
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Authors</h1>
+        <button class="btn btn-primary" @onclick="CreateNew">
+            <i class="bi bi-plus-circle"></i> New Author
+        </button>
+    </div>
+
+    <ErrorAlert Message="@errorMessage" />
+
+    <SearchBox Placeholder="Search authors by name..." OnSearch="HandleSearch" />
+
+    <LoadingSpinner IsLoading="@isLoading" Message="Loading authors..." />
+
+    @if (!isLoading && authors != null && authors.Any())
+    {
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Author ID</th>
+                        <th>Name</th>
+                        <th>Phone</th>
+                        <th>City</th>
+                        <th>State</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var author in authors)
+                    {
+                        <tr>
+                            <td>@author.AuthorId</td>
+                            <td>@author.FirstName @author.LastName</td>
+                            <td>@author.Phone</td>
+                            <td>@author.City</td>
+                            <td>@author.State</td>
+                            <td>
+                                <button class="btn btn-sm btn-info" @onclick="() => ViewDetails(author.AuthorId)">
+                                    <i class="bi bi-eye"></i> View
+                                </button>
+                                <button class="btn btn-sm btn-warning" @onclick="() => Edit(author.AuthorId)">
+                                    <i class="bi bi-pencil"></i> Edit
+                                </button>
+                                <button class="btn btn-sm btn-danger" @onclick="() => Delete(author.AuthorId)">
+                                    <i class="bi bi-trash"></i> Delete
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <Pagination CurrentPage="@currentPage" 
+                    TotalPages="@totalPages" 
+                    TotalItems="@totalItems"
+                    PageChanged="HandlePageChanged" />
+    }
+    else if (!isLoading && (authors == null || !authors.Any()))
+    {
+        <div class="alert alert-info">
+            No authors found. @(isSearching ? "Try a different search term." : "Click 'New Author' to create one.")
+        </div>
+    }
+</div>
+
+@code {
+    private List<AuthorDto>? authors;
+    private bool isLoading = true;
+    private bool isSearching = false;
+    private string? errorMessage;
+    private int currentPage = 1;
+    private int totalPages = 0;
+    private int totalItems = 0;
+    private const int pageSize = 10;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAuthors();
+    }
+
+    private async Task LoadAuthors()
+    {
+        try
+        {
+            isLoading = true;
+            errorMessage = null;
+            isSearching = false;
+
+            var result = await AuthorService.GetAllAsync(currentPage, pageSize);
+            if (result != null)
+            {
+                authors = result.Items.ToList();
+                currentPage = result.PageNumber;
+                totalPages = result.TotalPages;
+                totalItems = result.TotalCount;
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error loading authors: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task HandleSearch(string searchTerm)
+    {
+        try
+        {
+            isLoading = true;
+            errorMessage = null;
+
+            if (string.IsNullOrWhiteSpace(searchTerm))
+            {
+                await LoadAuthors();
+                return;
+            }
+
+            isSearching = true;
+            var results = await AuthorService.SearchAsync(searchTerm);
+            authors = results ?? new List<AuthorDto>();
+            currentPage = 1;
+            totalPages = 1;
+            totalItems = authors.Count;
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error searching authors: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task HandlePageChanged(int page)
+    {
+        currentPage = page;
+        await LoadAuthors();
+    }
+
+    private void CreateNew()
+    {
+        Navigation.NavigateTo("/authors/create");
+    }
+
+    private void ViewDetails(string authorId)
+    {
+        Navigation.NavigateTo($"/authors/{authorId}");
+    }
+
+    private void Edit(string authorId)
+    {
+        Navigation.NavigateTo($"/authors/edit/{authorId}");
+    }
+
+    private async Task Delete(string authorId)
+    {
+        try
+        {
+            await AuthorService.DeleteAsync(authorId);
+            await LoadAuthors();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to delete author: {ex.Message}";
+        }
+    }
+}

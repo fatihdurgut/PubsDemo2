@@ -1,0 +1,16 @@
+D:\source\repos\PubsDemo2\src\PubsApp.Application\bin\Debug\net9.0\PubsApp.Application.deps.json
+D:\source\repos\PubsDemo2\src\PubsApp.Application\bin\Debug\net9.0\PubsApp.Application.dll
+D:\source\repos\PubsDemo2\src\PubsApp.Application\bin\Debug\net9.0\PubsApp.Application.pdb
+D:\source\repos\PubsDemo2\src\PubsApp.Application\bin\Debug\net9.0\PubsApp.Core.dll
+D:\source\repos\PubsDemo2\src\PubsApp.Application\bin\Debug\net9.0\PubsApp.Core.pdb
+D:\source\repos\PubsDemo2\src\PubsApp.Application\obj\Debug\net9.0\PubsApp.Application.csproj.AssemblyReference.cache
+D:\source\repos\PubsDemo2\src\PubsApp.Application\obj\Debug\net9.0\PubsApp.Application.GeneratedMSBuildEditorConfig.editorconfig
+D:\source\repos\PubsDemo2\src\PubsApp.Application\obj\Debug\net9.0\PubsApp.Application.AssemblyInfoInputs.cache
+D:\source\repos\PubsDemo2\src\PubsApp.Application\obj\Debug\net9.0\PubsApp.Application.AssemblyInfo.cs
+D:\source\repos\PubsDemo2\src\PubsApp.Application\obj\Debug\net9.0\PubsApp.Application.csproj.CoreCompileInputs.cache
+D:\source\repos\PubsDemo2\src\PubsApp.Application\obj\Debug\net9.0\PubsApp.Application.sourcelink.json
+D:\source\repos\PubsDemo2\src\PubsApp.Application\obj\Debug\net9.0\PubsApp..A94AB8D2.Up2Date
+D:\source\repos\PubsDemo2\src\PubsApp.Application\obj\Debug\net9.0\PubsApp.Application.dll
+D:\source\repos\PubsDemo2\src\PubsApp.Application\obj\Debug\net9.0\refint\PubsApp.Application.dll
+D:\source\repos\PubsDemo2\src\PubsApp.Application\obj\Debug\net9.0\PubsApp.Application.pdb
+D:\source\repos\PubsDemo2\src\PubsApp.Application\obj\Debug\net9.0\ref\PubsApp.Application.dll

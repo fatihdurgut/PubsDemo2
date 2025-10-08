@@ -1,0 +1,210 @@
+@page "/titles/edit/{id}"
+@inject TitleService TitleService
+@inject PublisherService PublisherService
+@inject NavigationManager Navigation
+
+<PageTitle>Edit Title</PageTitle>
+
+<div class="container-fluid">
+    <div class="row mb-3">
+        <div class="col-12">
+            <h1>Edit Title</h1>
+        </div>
+    </div>
+
+    <LoadingSpinner IsLoading="@isLoading" />
+
+    <ErrorAlert Message="@errorMessage" OnClose="@(() => errorMessage = null)" />
+
+    @if (!isLoading && model != null)
+    {
+        <div class="row">
+            <div class="col-md-10">
+                <div class="card">
+                    <div class="card-body">
+                        <EditForm Model="@model" OnValidSubmit="HandleValidSubmit">
+                            <DataAnnotationsValidator />
+                            <ValidationSummary class="text-danger" />
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="titleName" class="form-label">Title Name <span class="text-danger">*</span></label>
+                                    <InputText id="titleName" class="form-control" @bind-Value="model.TitleName" maxlength="80" />
+                                    <ValidationMessage For="@(() => model.TitleName)" />
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="type" class="form-label">Type <span class="text-danger">*</span></label>
+                                    <InputSelect id="type" class="form-control" @bind-Value="model.Type">
+                                        <option value="">-- Select Type --</option>
+                                        <option value="business">Business</option>
+                                        <option value="mod_cook">Modern Cooking</option>
+                                        <option value="popular_comp">Popular Computing</option>
+                                        <option value="psychology">Psychology</option>
+                                        <option value="trad_cook">Traditional Cooking</option>
+                                        <option value="UNDECIDED">Undecided</option>
+                                    </InputSelect>
+                                    <ValidationMessage For="@(() => model.Type)" />
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="publisherId" class="form-label">Publisher</label>
+                                    <InputSelect id="publisherId" class="form-control" @bind-Value="model.PublisherId">
+                                        <option value="">-- No Publisher --</option>
+                                        @foreach (var publisher in publishers)
+                                        {
+                                            <option value="@publisher.PublisherId">@publisher.PublisherName</option>
+                                        }
+                                    </InputSelect>
+                                    <ValidationMessage For="@(() => model.PublisherId)" />
+                                </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="publishedDate" class="form-label">Published Date <span class="text-danger">*</span></label>
+                                    <InputDate id="publishedDate" class="form-control" @bind-Value="model.PublishedDate" />
+                                    <ValidationMessage For="@(() => model.PublishedDate)" />
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label for="price" class="form-label">Price</label>
+                                    <InputNumber id="price" class="form-control" @bind-Value="model.Price" step="0.01" />
+                                    <ValidationMessage For="@(() => model.Price)" />
+                                </div>
+
+                                <div class="col-md-4 mb-3">
+                                    <label for="advance" class="form-label">Advance</label>
+                                    <InputNumber id="advance" class="form-control" @bind-Value="model.Advance" step="0.01" />
+                                    <ValidationMessage For="@(() => model.Advance)" />
+                                </div>
+
+                                <div class="col-md-4 mb-3">
+                                    <label for="royalty" class="form-label">Royalty (%)</label>
+                                    <InputNumber id="royalty" class="form-control" @bind-Value="model.Royalty" />
+                                    <ValidationMessage For="@(() => model.Royalty)" />
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="ytdSales" class="form-label">Year-to-Date Sales</label>
+                                <InputNumber id="ytdSales" class="form-control" @bind-Value="model.YtdSales" />
+                                <ValidationMessage For="@(() => model.YtdSales)" />
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="notes" class="form-label">Notes</label>
+                                <InputTextArea id="notes" class="form-control" @bind-Value="model.Notes" rows="4" maxlength="200" />
+                                <small class="form-text text-muted">Maximum 200 characters</small>
+                                <ValidationMessage For="@(() => model.Notes)" />
+                            </div>
+
+                            <div class="mt-4">
+                                <button type="submit" class="btn btn-primary" disabled="@isSaving">
+                                    @if (isSaving)
+                                    {
+                                        <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                    }
+                                    <span class="bi bi-save"></span> Save Changes
+                                </button>
+                                <button type="button" class="btn btn-secondary" @onclick="Cancel">
+                                    <span class="bi bi-x-circle"></span> Cancel
+                                </button>
+                            </div>
+                        </EditForm>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    else if (!isLoading)
+    {
+        <div class="alert alert-warning">
+            <span class="bi bi-exclamation-triangle"></span> Title not found.
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public string Id { get; set; } = string.Empty;
+
+    private UpdateTitleDto? model;
+    private List<PublisherDto> publishers = new();
+    private bool isLoading = true;
+    private bool isSaving = false;
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        isLoading = true;
+        errorMessage = null;
+
+        try
+        {
+            // Load publishers for dropdown
+            var publishersResult = await PublisherService.GetAllAsync(1, 100);
+            publishers = publishersResult?.Items?.ToList() ?? new List<PublisherDto>();
+
+            // Load title data
+            var title = await TitleService.GetByIdAsync(Id);
+            if (title != null)
+            {
+                model = new UpdateTitleDto
+                {
+                    TitleName = title.TitleName,
+                    Type = title.Type,
+                    PublisherId = title.PublisherId,
+                    Price = title.Price,
+                    Advance = title.Advance,
+                    Royalty = title.Royalty,
+                    YtdSales = title.YtdSales,
+                    Notes = title.Notes,
+                    PublishedDate = title.PublishedDate
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error loading title: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        if (model == null) return;
+
+        isSaving = true;
+        errorMessage = null;
+
+        try
+        {
+            await TitleService.UpdateAsync(Id, model);
+            Navigation.NavigateTo($"/titles/{Id}");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error updating title: {ex.Message}";
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private void Cancel()
+    {
+        Navigation.NavigateTo($"/titles/{Id}");
+    }
+}

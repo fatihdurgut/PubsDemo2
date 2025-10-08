@@ -1,0 +1,176 @@
+@page "/authors/edit/{id}"
+@inject AuthorService AuthorService
+@inject NavigationManager Navigation
+
+<PageTitle>Edit Author</PageTitle>
+
+<div class="container-fluid">
+    <div class="row mb-3">
+        <div class="col-12">
+            <h1>Edit Author</h1>
+        </div>
+    </div>
+
+    <LoadingSpinner IsLoading="@isLoading" />
+
+    <ErrorAlert Message="@errorMessage" OnClose="@(() => errorMessage = null)" />
+
+    @if (!isLoading && model != null)
+    {
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-body">
+                        <EditForm Model="@model" OnValidSubmit="HandleValidSubmit">
+                            <DataAnnotationsValidator />
+                            <ValidationSummary class="text-danger" />
+
+                            <div class="mb-3">
+                                <label for="firstName" class="form-label">First Name <span class="text-danger">*</span></label>
+                                <InputText id="firstName" class="form-control" @bind-Value="model.FirstName" />
+                                <ValidationMessage For="@(() => model.FirstName)" />
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="lastName" class="form-label">Last Name <span class="text-danger">*</span></label>
+                                <InputText id="lastName" class="form-control" @bind-Value="model.LastName" />
+                                <ValidationMessage For="@(() => model.LastName)" />
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="phone" class="form-label">Phone <span class="text-danger">*</span></label>
+                                <InputText id="phone" class="form-control" @bind-Value="model.Phone" />
+                                <ValidationMessage For="@(() => model.Phone)" />
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="address" class="form-label">Address</label>
+                                <InputText id="address" class="form-control" @bind-Value="model.Address" />
+                                <ValidationMessage For="@(() => model.Address)" />
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="city" class="form-label">City</label>
+                                    <InputText id="city" class="form-control" @bind-Value="model.City" />
+                                    <ValidationMessage For="@(() => model.City)" />
+                                </div>
+
+                                <div class="col-md-3 mb-3">
+                                    <label for="state" class="form-label">State</label>
+                                    <InputText id="state" class="form-control" maxlength="2" @bind-Value="model.State" />
+                                    <ValidationMessage For="@(() => model.State)" />
+                                </div>
+
+                                <div class="col-md-3 mb-3">
+                                    <label for="zip" class="form-label">ZIP</label>
+                                    <InputText id="zip" class="form-control" @bind-Value="model.Zip" />
+                                    <ValidationMessage For="@(() => model.Zip)" />
+                                </div>
+                            </div>
+
+                            <div class="mb-3 form-check">
+                                <InputCheckbox id="contract" class="form-check-input" @bind-Value="model.Contract" />
+                                <label for="contract" class="form-check-label">Has Contract</label>
+                            </div>
+
+                            <div class="mt-4">
+                                <button type="submit" class="btn btn-primary" disabled="@isSaving">
+                                    @if (isSaving)
+                                    {
+                                        <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                    }
+                                    <span class="bi bi-save"></span> Save Changes
+                                </button>
+                                <button type="button" class="btn btn-secondary" @onclick="Cancel">
+                                    <span class="bi bi-x-circle"></span> Cancel
+                                </button>
+                            </div>
+                        </EditForm>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    else if (!isLoading)
+    {
+        <div class="alert alert-warning">
+            <span class="bi bi-exclamation-triangle"></span> Author not found.
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public string Id { get; set; } = string.Empty;
+
+    private UpdateAuthorDto? model;
+    private bool isLoading = true;
+    private bool isSaving = false;
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAuthor();
+    }
+
+    private async Task LoadAuthor()
+    {
+        isLoading = true;
+        errorMessage = null;
+
+        try
+        {
+            var author = await AuthorService.GetByIdAsync(Id);
+            if (author != null)
+            {
+                model = new UpdateAuthorDto
+                {
+                    FirstName = author.FirstName,
+                    LastName = author.LastName,
+                    Phone = author.Phone,
+                    Address = author.Address,
+                    City = author.City,
+                    State = author.State,
+                    Zip = author.Zip,
+                    Contract = author.Contract
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error loading author: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        if (model == null) return;
+
+        isSaving = true;
+        errorMessage = null;
+
+        try
+        {
+            await AuthorService.UpdateAsync(Id, model);
+            Navigation.NavigateTo($"/authors/{Id}");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error updating author: {ex.Message}";
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private void Cancel()
+    {
+        Navigation.NavigateTo($"/authors/{Id}");
+    }
+}
